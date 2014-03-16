@@ -19,6 +19,7 @@ bool client::get_reply(){
 	if((n = recv(ctrlsd, (void *)s, sizeof s, 0)) < 0) return false;
 	else if(n == 0){
 		cout << "Connection closed by server \n";
+		close(ctrlsd);
 		exit(1);
 	}
 	cout << s;

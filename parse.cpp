@@ -24,6 +24,7 @@ int pargs(const char *s, char ***u){
 		else if(*s == '\\'){
 			if(*(++s) == '\0'){
 				cout << "Invalid arguments(s): Stray \\\n";
+				return -1;
 			}
 			v[count] += *s;
 			s++;
