@@ -34,8 +34,8 @@ bool server::send_reply(const char *s){
 
 //put command
 void server::eput(){
-	int argc;	//number of arguments 
-	char **argv, *fname;	//argv is array of arguments, fname is filename 
+	int argc;	//number of arguments
+	char **argv, *fname;	//argv is array of arguments, fname is filename
 	argc = pargs(command, &argv); //parse command to get arguments
 	if(argc == 1){	//the only arg is put
 		send_reply(_TFARG); //too few arguments
@@ -151,7 +151,7 @@ void server::epwd(){
 void server::eport(){
 	char *p = command + 5;
 	while((*p == ' ')||(*p == '\t')) p++;
-	dataport = get_str((const char *)p);
+	dataport = get_str((const char *)p); //get_str() in parse.cpp
 	send_reply(PORT);	//port received
 }
 

@@ -3,6 +3,7 @@
 #include "connect.hpp"
 #endif
 
+//create a copy of string s
 char *cstr(const char *s){
 	char *s1 = new char[strlen(s)+1];
 	strcpy(s1,s);
@@ -30,11 +31,12 @@ connection::connection(const char *port, int blog){
 	remoteIP = new char[INET6_ADDRSTRLEN];
 }
 
+//set listener port
 void connection::set_lport(const char *port){
 	lport = cstr(port);
 }
 
-// get sockaddr, IPv4 or IPv6:
+//get sockaddr, IPv4 or IPv6:
 void *connection::get_in_addr(struct sockaddr *sa){
 	if (sa->sa_family == AF_INET) {
 		return &(((struct sockaddr_in*)sa)->sin_addr);
@@ -55,6 +57,7 @@ sockdesc connection::get_listener_sock(){
 		return (listener = -2);
 	}
 	
+	//loop through all the results and bind to the first we can
 	for(p = ai; p != NULL; p = p->ai_next){
 		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 	    if(listener < 0){
@@ -71,12 +74,12 @@ sockdesc connection::get_listener_sock(){
 		break;
 	}
 
-	// if we got here, it means we didn't get bound
+	//if we got here, it means we didn't get bound
 	if(p == NULL){
 		return (listener = -3);
 	}
 
-	freeaddrinfo(ai); // all done with this
+	freeaddrinfo(ai); //all done with this
 
     // listen
     if(listen(listener, backlog) == -1){
@@ -113,7 +116,7 @@ sockdesc connection::req_cnct(const char *ip, const char *port){
 		return -2;
 	}
 
-	// loop through all the results and connect to the first we can
+	//loop through all the results and connect to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next){
 		if((sockfd = socket(p->ai_family, p->ai_socktype,
 			p->ai_protocol)) == -1){
@@ -135,14 +138,14 @@ sockdesc connection::req_cnct(const char *ip, const char *port){
 	return sockfd;
 }
 
-
+//print most recent error
 void connection::prerror(int code){
 	switch(code){
 		case -1:
 			perror("accept");
 			break;
 		case -2:
-			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ecode));
+			fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ecode)); //uses ecode member
 			break;
 		case -3:
 			fprintf(stderr, "bind: failed to bind\n");
@@ -167,13 +170,14 @@ myftp_data::myftp_data(FILE *f, sockdesc s){
 	nbytes = 0;
 }
 
+//send file
 bool myftp_data::send_file(){
 	char buffer[MAXSIZE];
 	size_t count;
 	nbytes = 0;
-	while(!feof(fp)){
-    	count = fread((void *)buffer, 1, sizeof(buffer), fp);
-    	if(ferror(fp) || (send(sd, (const void *)buffer, count, 0) == -1)){
+	while(!feof(fp)){	//end of file
+    	count = fread((void *)buffer, 1, sizeof(buffer), fp);	//read next data chunk from file
+    	if(ferror(fp) || (send(sd, (const void *)buffer, count, 0) == -1)){	//send data chunk on sd
         	return false;
     	}
     	nbytes += count;
@@ -181,18 +185,20 @@ bool myftp_data::send_file(){
 	return true;
 }
 
+//receive file
 bool myftp_data::recv_file(){
 	char buffer[MAXSIZE];
 	int count;
 	nbytes = 0;
-	while((count = recv(sd, (void *)buffer, sizeof(buffer), 0))){
+	while((count = recv(sd, (void *)buffer, sizeof(buffer), 0))){ //recv data chunk on sd
 		if(count > 0) nbytes += count;
-		if((count < 0)||(fwrite((const void *)buffer, 1, count, fp) < (unsigned int)count))
+		if((count < 0)||(fwrite((const void *)buffer, 1, count, fp) < (unsigned int)count)) //write data chunk to file
 			return false;
 	}
 	return true;
 }
 
+//get size of last transfer
 size_t myftp_data::getsize(){
 	return nbytes;
 }
