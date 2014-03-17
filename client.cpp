@@ -179,17 +179,20 @@ void client::eget(){ //check eput() for comments
 	}
 	if(!eport()){
 		cout << FAIL;
+		remove(fname);	//newly created file(fname) removed
 		fclose(f);
 		return;
 	}
 	if(send(ctrlsd, (const void *)command, strlen(command)+1, 0) == -1){
 		cout << FAIL;
+		remove(fname);	//newly created file(fname) removed
 		close(listener);
 		fclose(f);
 		return;
 	}
 	if(!get_reply(csGET)){ //check if server successfully starts sending data
 		cout << FAIL;
+		remove(fname);	//newly created file(fname) removed
 		close(listener);
 		fclose(f);
 		return;

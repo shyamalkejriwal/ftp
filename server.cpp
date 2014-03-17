@@ -57,13 +57,31 @@ void server::eput(){
 	sockdesc s;	
 	if((s = req_cnct((const char *)remoteIP, (const char *)dataport)) < 0){ //server tries to connect to client on received dataport
 		send_reply(_PUT);	//connection unsuccessful
+		remove(fname);		//newly created file(fname) removed
+		fclose(f);
 		return;
 	}
-	if(!send_reply(rPUT)) return;	//connected, server ready to receive data
+	if(!send_reply(rPUT)){	//connected, server ready to receive data
+		remove(fname);		//reply fails, newly created file(fname) removed
+		fclose(f);
+		close(s);
+		return;
+	}
 	
 	myftp_data md(f, s);	//myftp_data obj to handle file transfer
-	if(md.recv_file()) send_reply(PUT); //file successfully received by server
-	else send_reply(_PUT);	//file transfer unsuccessful
+	if(md.recv_file()){		//file successfully received by server
+		string str1(PUT), str2;
+		stringstream sst;
+		sst << md.getsize();
+		sst >> str2;
+		str1 += str2;
+		str1 += " bytes received\n";
+		send_reply(str1.c_str());
+	}
+	else{
+		send_reply(_PUT);	//file transfer unsuccessful
+		remove(fname);		//newly created file(fname) removed
+	}
 	fclose(f);
 	close(s);
 }
@@ -98,7 +116,15 @@ void server::eget(){	//check eput() for comments
 	if(!send_reply(sGET)) return;	//server starts to send data
 	
 	myftp_data md(f, s);
-	if(md.send_file()) send_reply(GET);	//file successfully received by server
+	if(md.send_file()){		//file successfully sent by server
+		string str1(GET), str2;
+		stringstream sst;
+		sst << md.getsize();
+		sst >> str2;
+		str1 += str2;
+		str1 += " bytes transferred\n";
+		send_reply(str1.c_str());
+	}
 	else send_reply(_GET);
 	fclose(f);
 	close(s);		//very important, after s is closed, recv() returns 0 at client side, indicating completion of file transfer

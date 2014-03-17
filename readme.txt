@@ -19,6 +19,8 @@ Instructions for execution:
 1. At server side, run "./server"
 2. At client side, run "./myftp <server-ip> 5000"
 
+IMPORTANT - If 'bind: failed to bind' error occurs, close the terminal and run the executable again.
+
 If connection is successful after the above steps: 
 1. Response at server side:
 	Connected to <client-ip>
@@ -56,7 +58,8 @@ Salient features:
 	c. A double quotation mark preceded by a backslash (\") is interpreted as a literal double quotation mark character (").
 	d. Any character 'ch' preceded by a backslash (\ch) is interpreted as a literal character 'ch' (including '\').
 
-6. All options supported with 'ls'.
+6. The server sends the size of file transfer along with success reply.
+7. All options supported with 'ls'.
 -----------------------------------------
 
 Brief descriptions of source files:
@@ -78,3 +81,4 @@ Brief descriptions of source files:
 
 6. main_server.cpp and main_client.cpp
 	These files contain main functions for server and client, respectively.
+--------------------------------------------
