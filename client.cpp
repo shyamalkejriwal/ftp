@@ -242,7 +242,7 @@ void client::equit(){
 }
 
 void client::get_service(){
-	int n;
+	
 	if((ctrlsd = req_cnct(server_IP, server_port)) < 0){
 		prerror(ctrlsd);
 		exit(1);

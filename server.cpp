@@ -3,7 +3,7 @@
 #include "server.hpp"
 #endif
 
-#include "parse.cpp"
+#include "parse.cpp"	//conatins functions to parse command arguments 
 
 void sigchld_handler(int s){
 	while(waitpid(-1, NULL, WNOHANG) > 0);
@@ -13,14 +13,17 @@ server::server() : connection(){
 	dataport = NULL;
 }
 
+//blog used in constructor for connection class
 server::server(int blog) : connection(blog){
 	dataport = NULL;
 }
 
+//port and blog used in constructor for connection class
 server::server(const char *port, int blog) : connection(port,blog){
 	dataport = NULL;
 }
 
+//to send a reply to client on control port
 bool server::send_reply(const char *s){
 	if(send(newsd, (const void *)s, strlen(s)+1, 0) == -1){
     	perror("Reply fails");
@@ -29,42 +32,44 @@ bool server::send_reply(const char *s){
 	return true;
 }
 
+//put command
 void server::eput(){
-	int argc;
-	char **argv, *fname;
-	argc = pargs(command, &argv);
-	if(argc == 1){
-		send_reply(_TFARG);
+	int argc;	//number of arguments 
+	char **argv, *fname;	//argv is array of arguments, fname is filename 
+	argc = pargs(command, &argv); //parse command to get arguments
+	if(argc == 1){	//the only arg is put
+		send_reply(_TFARG); //too few arguments
 		return;
 	}
-	else if(argc == 2) fname = argv[1];
-	else fname = argv[2];
-	if(access(fname, F_OK) != -1){
+	else if(argc == 2) fname = argv[1];	//user inputs only local fname, local fname becomes server fname
+	else fname = argv[2];	//user inputs server fname
+	if(access(fname, F_OK) != -1){	//file with fname already exists, can't be overwritten	
     	send_reply(_FXTS);
     	return;
 	}
 
 	FILE *f = fopen(fname, "wb");
-	if(!f){
+	if(!f){	//file couldn't be opened
 		send_reply(_FNOP);
 		return;
 	}
 
-	sockdesc s;
-	if((s = req_cnct((const char *)remoteIP, (const char *)dataport)) < 0){
-		send_reply(_PUT);
+	sockdesc s;	
+	if((s = req_cnct((const char *)remoteIP, (const char *)dataport)) < 0){ //server tries to connect to client on received dataport
+		send_reply(_PUT);	//connection unsuccessful
 		return;
 	}
-	if(!send_reply(rPUT)) return;
+	if(!send_reply(rPUT)) return;	//connected, server ready to receive data
 	
-	myftp_data md(f, s);
-	if(md.recv_file()) send_reply(PUT);
-	else send_reply(_PUT);
+	myftp_data md(f, s);	//myftp_data obj to handle file transfer
+	if(md.recv_file()) send_reply(PUT); //file successfully received by server
+	else send_reply(_PUT);	//file transfer unsuccessful
 	fclose(f);
 	close(s);
 }
 
-void server::eget(){
+//get command
+void server::eget(){	//check eput() for comments
 	int argc;
 	char **argv, *fname;
 	argc = pargs(command, &argv);
@@ -73,8 +78,8 @@ void server::eget(){
 		return;
 	}
 	
-	fname = argv[1];
-	if(access(fname, F_OK) == -1){
+	fname = argv[1];	//file requested by client
+	if(access(fname, F_OK) == -1){	//file doesn't exist
     	send_reply(_FNXTS);
     	return;
 	}
@@ -90,35 +95,37 @@ void server::eget(){
 		send_reply(_GET);
 		return;
 	}
-	if(!send_reply(sGET)) return;
+	if(!send_reply(sGET)) return;	//server starts to send data
 	
 	myftp_data md(f, s);
-	if(md.send_file()) send_reply(GET);
+	if(md.send_file()) send_reply(GET);	//file successfully received by server
 	else send_reply(_GET);
 	fclose(f);
-	close(s);		//very important
+	close(s);		//very important, after s is closed, recv() returns 0 at client side, indicating completion of file transfer
 }
 
+//ls command
 void server::els(){
 	sockdesc s;
-	if((s = req_cnct((const char *)remoteIP, (const char *)dataport)) < 0){
+	if((s = req_cnct((const char *)remoteIP, (const char *)dataport)) < 0){	//server tries to connect to client on received dataport
 		send_reply(_LS);
 		return;
 	}
-	if(!send_reply(sLS)) return;
+	if(!send_reply(sLS)) return;	//server starts to send listing
 	FILE *f = (FILE *)popen(command, "r");
-	myftp_data md(f, s);
-	if(md.send_file()) send_reply(LS);
+	myftp_data md(f, s);	//myftp_data obj to handle file transfer
+	if(md.send_file()) send_reply(LS);	//listing successful
 	else send_reply(_LS);
 	pclose(f);
 	close(s);
 }
 
-void server::ecd(){
+//cd command
+void server::ecd(){	//check eput() for comments
 	int argc;
 	char **argv;
 	argc = pargs(command, &argv);
-	if(argc < 0){
+	if(argc < 0){	//invalid argument, check parse.cpp for details
 		send_reply(_INVARG);
 		return;
 	}
@@ -127,10 +134,11 @@ void server::ecd(){
 		return;
 	}
 
-	if(!chdir(argv[1])) send_reply(CD);
+	if(!chdir(argv[1])) send_reply(CD); //directory change successful
 	else send_reply(_CD);
 }
 
+//pwd command
 void server::epwd(){
 	FILE *f = (FILE *)popen(command, "r");
 	char line[MAXSIZE];
@@ -139,13 +147,15 @@ void server::epwd(){
 	pclose(f);
 }
 
+//port command
 void server::eport(){
 	char *p = command + 5;
 	while((*p == ' ')||(*p == '\t')) p++;
 	dataport = get_str((const char *)p);
-	send_reply(PORT);
+	send_reply(PORT);	//port received
 }
 
+//child process starts from here to serve a client
 void server::serve_client(){
 	cout << "Connected to: " << remoteIP << endl;
 	close(listener);	//child doesn't need the listener
@@ -155,7 +165,7 @@ void server::serve_client(){
 		stringstream ss;
 		int n = recv(newsd, command, sizeof command, 0);
 		if(n < 0) continue;
-		if(n == 0) break;
+		if(n == 0) break;	//connection closed
 		ss << command;
 		ss >> buffer;
 		if(!strcmp(buffer, "ls")) els();
@@ -175,10 +185,11 @@ void server::serve_client(){
 	exit(0);
 }
 
+//parent server process runs here
 void server::serve(){
 	sockdesc lsd;
 	struct sigaction sa;
-	if((lsd = get_listener_sock()) < 0){
+	if((lsd = get_listener_sock()) < 0){ //get a socket to listen for connections
 		prerror(lsd);
 		exit(1);
 	}
@@ -191,14 +202,14 @@ void server::serve(){
 		exit(1);
 	}
 
-	while(1){
+	while(1){ //main loop for accepting connections
 		newsd = accept_cnct();
 		if(newsd < 0){
 			prerror(newsd);
 			continue;
 		}
 
-		if(!fork()) serve_client();
+		if(!fork()) serve_client(); //fork a child process to serve the new connection
 		close(newsd); //parent doesn't need this
 	}
 }

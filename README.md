@@ -6,5 +6,5 @@ ftp
 
 3. Execute "./server" at server side.
 
-4. Execute "./myftp \<server-ip\> \<server-port\>" at client side.
+4. Execute "./myftp \<server-ip\> \<server-port\>" at client side. Use '5000' as server-port.
 

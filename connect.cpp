@@ -185,9 +185,9 @@ bool myftp_data::recv_file(){
 	char buffer[MAXSIZE];
 	int count;
 	nbytes = 0;
-	while(count = recv(sd, (void *)buffer, sizeof(buffer), 0)){
+	while((count = recv(sd, (void *)buffer, sizeof(buffer), 0))){
 		if(count > 0) nbytes += count;
-		if((count < 0)||(fwrite((const void *)buffer, 1, count, fp) < count))
+		if((count < 0)||(fwrite((const void *)buffer, 1, count, fp) < (unsigned int)count))
 			return false;
 	}
 	return true;
